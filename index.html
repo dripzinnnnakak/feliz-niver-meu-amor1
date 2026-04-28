@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Desafio Épico e Surpresa</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: #000; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; touch-action: none; }
+        #gameCanvas { background-color: #111; transition: opacity 2s; }
+        
+        #controles { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 10px; box-sizing: border-box; z-index: 100; user-select: none; }
+        .dpad { display: grid; grid-template-columns: 45px 45px 45px; gap: 5px; }
+        .btn { background: rgba(0, 0, 0, 0.6); border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; color: white; width: 45px; height: 45px; cursor: pointer; }
+        .btn:active { background: rgba(255, 255, 255, 0.6); }
+        .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; } .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
+        
+        .acoes { display: flex; gap: 8px; align-items: flex-end; padding-bottom: 10px; }
+        .btn-cura { width: 50px; height: 50px; border-radius: 50%; background: rgba(46, 213, 115, 0.4); border-color: #2ed573; font-size: 22px;}
+        .btn-dash { width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 144, 255, 0.4); border-color: #1e90ff; font-size: 24px;}
+        .btn-atk { width: 65px; height: 65px; border-radius: 50%; background: rgba(255, 71, 87, 0.4); border-color: #ff4757; font-size: 28px;}
+        .btn-atk-forte { width: 65px; height: 65px; border-radius: 50%; background: rgba(255, 165, 0, 0.4); border-color: orange; font-size: 28px;}
+
+        #telaMorte, #mensagemSurpresa { display: none; position: absolute; text-align: center; z-index: 200; }
+        #telaMorte { width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); flex-direction: column; justify-content: center; align-items: center; animation: fadeInMorte 2s ease-in; }
+        #telaMorte h1 { color: #8b0000; font-family: 'Times New Roman', Times, serif; font-size: 12vw; letter-spacing: 5px; text-shadow: 0 0 20px red; margin: 0; }
+        #btnRenascer { margin-top: 40px; padding: 15px 40px; font-size: 1.5rem; background-color: transparent; color: white; border: 2px solid #8b0000; border-radius: 5px; cursor: pointer; transition: 0.3s; }
+        #btnRenascer:hover { background-color: #8b0000; color: black; box-shadow: 0 0 15px red; }
+        @keyframes fadeInMorte { from { opacity: 0; } to { opacity: 1; } }
+
+        #mensagemSurpresa { width: 90%; max-height: 90vh; overflow-y: auto; z-index: 10; animation: subirSuave 4s ease-out forwards; }
+        #mensagemSurpresa h1 { color: #ff4757; font-size: 2rem; text-shadow: 0 0 10px rgba(255, 71, 87, 0.8); margin-bottom: 10px; }
+        #mensagemSurpresa p { font-size: 1.1rem; color: #f1f2f6; line-height: 1.6; background: rgba(0, 0, 0, 0.8); padding: 20px; border-radius: 15px; border: 1px solid #ff4757; box-shadow: 0 0 20px rgba(255, 71, 87, 0.5); }
+        @keyframes subirSuave { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .heart { position: absolute; color: #ff4757; font-size: 24px; animation: floatUp 5s linear infinite; opacity: 0; z-index: 1; }
+        @keyframes floatUp { 0% { transform: translateY(100vh) scale(0.5); opacity: 1; } 100% { transform: translateY(-10vh) scale(1.2); opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="telaMorte">
+        <h1>VOCÊ MORREU</h1>
+        <button id="btnRenascer" onclick="renascer()">Renascer</button>
+    </div>
+
+    <div id="controles">
+        <div class="dpad">
+            <div class="btn up" id="btnW">⬆️</div>
+            <div class="btn left" id="btnA">⬅️</div>
+            <div class="btn right" id="btnD">➡️</div>
+            <div class="btn down" id="btnS">⬇️</div>
+        </div>
+        <div class="acoes">
+            <div class="btn btn-cura" id="btnE">🧪</div>
+            <div class="btn btn-dash" id="btnShift">💨</div>
+            <div class="btn btn-atk" id="btnSpace">⚔️</div>
+            <div class="btn btn-atk-forte" id="btnR">💥</div>
+        </div>
+    </div>
+
+    <div id="mensagemSurpresa">
+        <h1>Feliz Aniversário, meu amor! ❤️</h1>
+        <p>
+            Queria te dizer que mesmo eu sendo bobão às vezes, vc é muito importante pra mim. Eu posso n demonstrar sempre do jeito certo, mas eu gosto muito de vc de verdade. Vc é uma pessoa incrível e eu admiro muito seu jeito, sua personalidade e até esses momentos que a gente discute e depois fica de boa asfdasfdas mas faz parte da gente. Espero que seu dia seja perfeito, q vc fique feliz de verdade pq vc merece tudo e eu quero continuar do seu lado vivendo mais momentos com vc melhores ainda. Parabéns, te amo!
+        </p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const telaSurpresa = document.getElementById("mensagemSurpresa");
+        const controlesUI = document.getElementById("controles");
+        const telaMorte = document.getElementById("telaMorte");
+
+        function redimensionarCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', redimensionarCanvas); redimensionarCanvas();
+
+        const imgCenario = new Image(); imgCenario.src = "cenario.jpg";
+
+        // ==========================================
+        // IMAGENS DO SAMURAI (Pasta: imagens/)
+        // ==========================================
+        const animacoes = {
+            idle: new Image(), walk: new Image(), dash: new Image(),
+            attack1: new Image(), attackForte: new Image(), heal: new Image(), dead: new Image()
+        };
+        animacoes.idle.src = "imagens/Idle.png";
+        animacoes.walk.src = "imagens/Walk.png";
+        animacoes.dash.src = "imagens/Run.png"; 
+        animacoes.attack1.src = "imagens/Attack_1.png"; 
+        animacoes.attackForte.src = "imagens/Attack_3.png"; 
+        animacoes.heal.src = "imagens/Shield.png"; 
+        animacoes.dead.src = "imagens/Dead.png";
+
+        // ==========================================
+        // IMAGENS DO BOSS (Pasta: boss/)
+        // ==========================================
+        const animacoesChefe = {
+            idle: new Image(), idle2: new Image(), attacking: new Image(), death: new Image(),
+            skill1: new Image(), summon: new Image()
+        };
+        animacoesChefe.idle.src = "boss/idle.png";
+        animacoesChefe.idle2.src = "boss/idle2.png";
+        animacoesChefe.attacking.src = "boss/attacking.png";
+        animacoesChefe.death.src = "boss/death.png";
+        animacoesChefe.skill1.src = "boss/skill1.png";
+        animacoesChefe.summon.src = "boss/summon.png";
+
+        let jogoAtivo = true;
+
+        const jogador = {
+            x: canvas.width / 2, y: canvas.height - 150, width: 60, height: 60,
+            speed: 3, hp: 100, maxHp: 100, stamina: 100, maxStamina: 100,
+            curas: 3, isHealing: false, healCooldown: 0,
+            isAttacking: false, isHeavyAttacking: false, attackCooldown: 0,
+            isDashing: false, dashCooldown: 0, dashTimer: 0, dirX: 0, dirY: -1,
+            
+            imgAtual: animacoes.idle, estadoAtual: "idle", 
+            spriteWidth: 128, spriteHeight: 128, frameX: 0, maxFrames: 6, animTimer: 0, espelhar: false    
+        };
+
+        const chefe = {
+            x: canvas.width / 2 - 50, y: 80, width: 100, height: 100,
+            speed: 1.5, hp: 200, maxHp: 200, nome: "LORDE DAS CINZAS", fase: 1, transicaoFase: 0,
+            estado: "perseguir", timerEstado: 0, direcaoAtaqueX: 0, direcaoAtaqueY: 0, tipoAtaque: "dash", areaRaio: 0, isTakingDamage: false,
+            
+            imgAtual: animacoesChefe.idle, estadoSprite: "idle", 
+            spriteWidth: 100, spriteHeight: 100, frameX: 0, maxFrames: 4, animTimer: 0, espelhar: false    
+        };
+
+        const keys = { w: false, a: false, s: false, d: false, space: false, r: false, shift: false, e: false };
+
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "w" || e.key === "ArrowUp") { keys.w = true; jogador.dirY = -1; jogador.dirX = 0; }
+            if (e.key === "s" || e.key === "ArrowDown") { keys.s = true; jogador.dirY = 1; jogador.dirX = 0; }
+            if (e.key === "a" || e.key === "ArrowLeft") { keys.a = true; jogador.dirX = -1; jogador.dirY = 0; jogador.espelhar = true; } 
+            if (e.key === "d" || e.key === "ArrowRight") { keys.d = true; jogador.dirX = 1; jogador.dirY = 0; jogador.espelhar = false; } 
+            if (e.key === " ") keys.space = true;
+            if (e.key === "r" || e.key === "R") keys.r = true;
+            if (e.key === "e" || e.key === "E") keys.e = true;
+            if (e.key === "Shift") keys.shift = true;
+        });
+
+        window.addEventListener("keyup", (e) => {
+            if (e.key === "w" || e.key === "ArrowUp") keys.w = false;
+            if (e.key === "s" || e.key === "ArrowDown") keys.s = false;
+            if (e.key === "a" || e.key === "ArrowLeft") keys.a = false;
+            if (e.key === "d" || e.key === "ArrowRight") keys.d = false;
+            if (e.key === " ") keys.space = false;
+            if (e.key === "r" || e.key === "R") keys.r = false;
+            if (e.key === "e" || e.key === "E") keys.e = false;
+            if (e.key === "Shift") keys.shift = false;
+        });
+
+        function mapearBotao(id, key, espelhar = null) {
+            const btn = document.getElementById(id); if(!btn) return;
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; if(espelhar !== null) jogador.espelhar = espelhar; }, {passive: false});
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; }, {passive: false});
+            btn.addEventListener('mousedown', (e) => { e.preventDefault(); keys[key] = true; if(espelhar !== null) jogador.espelhar = espelhar; });
+            btn.addEventListener('mouseup', (e) => { e.preventDefault(); keys[key] = false; });
+            btn.addEventListener('mouseleave', (e) => { keys[key] = false; });
+        }
+
+        mapearBotao('btnW', 'w'); mapearBotao('btnA', 'a', true); mapearBotao('btnS', 's'); mapearBotao('btnD', 'd', false);
+        mapearBotao('btnSpace', 'space'); mapearBotao('btnR', 'r'); mapearBotao('btnShift', 'shift'); mapearBotao('btnE', 'e');
+
+        function renascer() {
+            telaMorte.style.display = "none";
+            jogador.hp = jogador.maxHp; jogador.stamina = jogador.maxStamina; jogador.curas = 3; jogador.estadoAtual = "idle";
+            jogador.imgAtual = animacoes.idle; jogador.frameX = 0; 
+            jogador.x = canvas.width / 2; jogador.y = canvas.height - 150;
+            chefe.hp = chefe.maxHp; chefe.x = canvas.width / 2 - 50; chefe.y = 80;
+            chefe.estado = "perseguir"; mudarEstadoChefe("idle", animacoesChefe.idle, 4); chefe.fase = 1; chefe.speed = 1.5; chefe.nome = "LORDE DAS CINZAS";
+            jogoAtivo = true; // Só precisamos disto, o loop já está a correr!
+        }
+
+        function criarCoracoes() {
+            setInterval(() => {
+                const heart = document.createElement("div"); heart.classList.add("heart"); heart.innerHTML = "❤️";
+                heart.style.left = Math.random() * 100 + "vw"; heart.style.animationDuration = (Math.random() * 2 + 3) + "s";
+                document.body.appendChild(heart); setTimeout(() => heart.remove(), 5000);
+            }, 300);
+        }
+
+        function danoAoChefe(dano) { chefe.hp -= dano; chefe.isTakingDamage = true; setTimeout(() => chefe.isTakingDamage = false, 150); }
+
+        function mudarEstadoChefe(novoEstadoSprite, novaImagem, novosMaxFrames, timerLógica = null) {
+            if (chefe.estadoSprite !== novoEstadoSprite) {
+                chefe.estadoSprite = novoEstadoSprite;
+                chefe.imgAtual = novaImagem;
+                chefe.maxFrames = novosMaxFrames;
+                chefe.frameX = 0;
+                chefe.animTimer = 0;
+            }
+            if (timerLógica !== null) chefe.timerEstado = timerLógica;
+        }
+
+        function update() {
+            // Se morreu, apenas anima o boneco a cair e pára o resto
+            if (jogador.hp <= 0) { 
+                if (jogoAtivo) {
+                    jogoAtivo = false; jogador.estadoAtual = "dead"; jogador.imgAtual = animacoes.dead; jogador.maxFrames = 4; jogador.frameX = 0; jogador.animTimer = 0;
+                    setTimeout(() => { telaMorte.style.display = "flex"; }, 1500); 
+                }
+                jogador.animTimer++;
+                if (jogador.animTimer >= 8) { if (jogador.frameX < jogador.maxFrames - 1) { jogador.frameX++; } jogador.animTimer = 0; }
+                return; 
+            }
+
+            // Se o Boss morreu, apenas anima a morte do Boss
+            if (chefe.hp <= 0) { 
+                if (jogoAtivo) {
+                    jogoAtivo = false; chefe.estado = "dead"; mudarEstadoChefe("death", animacoesChefe.death, 6); 
+                    setTimeout(() => { telaSurpresa.style.display = "block"; criarCoracoes(); canvas.style.opacity = "0"; controlesUI.style.display = "none"; }, 2000); 
+                }
+                chefe.animTimer++;
+                if (chefe.animTimer >= 8) { if (chefe.frameX < chefe.maxFrames - 1) { chefe.frameX++; } chefe.animTimer = 0; }
+                return; 
+            }
+
+            if (!jogoAtivo) return;
+
+            // Cura Samurai
+            if (keys.e && jogador.healCooldown <= 0 && jogador.curas > 0 && jogador.hp < jogador.maxHp) {
+                jogador.hp = Math.min(jogador.maxHp, jogador.hp + 40); jogador.curas--; jogador.healCooldown = 40; jogador.isHealing = true;
+                setTimeout(() => jogador.isHealing = false, 400); keys.e = false;
+            }
+            if (jogador.healCooldown > 0) jogador.healCooldown--;
+
+            // Movimento Samurai
+            let isMoving = false;
+            if (keys.w) { jogador.dirY = -1; jogador.dirX = 0; isMoving = true; }
+            if (keys.s) { jogador.dirY = 1; jogador.dirX = 0; isMoving = true; }
+            if (keys.a) { jogador.dirX = -1; jogador.dirY = 0; isMoving = true; }
+            if (keys.d) { jogador.dirX = 1; jogador.dirY = 0; isMoving = true; }
+            
+            if (jogador.stamina < jogador.maxStamina && !keys.space && !keys.r && !jogador.isDashing) jogador.stamina += 0.5;
+            if (keys.shift && jogador.dashCooldown <= 0 && jogador.stamina >= 30) { jogador.isDashing = true; jogador.dashTimer = 12; jogador.dashCooldown = 60; jogador.stamina -= 30; keys.shift = false; }
+            
+            let velocidadeAtual = jogador.isDashing ? jogador.speed * 3.5 : jogador.speed;
+            if (jogador.isDashing) { jogador.x += jogador.dirX * velocidadeAtual; jogador.y += jogador.dirY * velocidadeAtual; jogador.dashTimer--; if (jogador.dashTimer <= 0) jogador.isDashing = false; } else {
+                if (keys.w && jogador.y > 0) jogador.y -= velocidadeAtual; if (keys.s && jogador.y + jogador.height < canvas.height) jogador.y += velocidadeAtual; if (keys.a && jogador.x > 0) jogador.x -= velocidadeAtual; if (keys.d && jogador.x + jogador.width < canvas.width) jogador.x += velocidadeAtual; }
+            if (jogador.dashCooldown > 0) jogador.dashCooldown--;
+            if (jogador.attackCooldown > 0) jogador.attackCooldown--;
+
+            // Ataques Samurai
+            const distX = Math.abs((jogador.x + jogador.width/2) - (chefe.x + chefe.width/2)); const distY = Math.abs((jogador.y + jogador.height/2) - (chefe.y + chefe.height/2));
+            if (keys.space && jogador.attackCooldown <= 0 && !jogador.isDashing && jogador.stamina >= 15) { jogador.isAttacking = true; jogador.isHeavyAttacking = false; jogador.attackCooldown = 25; jogador.stamina -= 15; if (distX < 110 && distY < 110) danoAoChefe(10); setTimeout(() => jogador.isAttacking = false, 400); }
+            if (keys.r && jogador.attackCooldown <= 0 && !jogador.isDashing && jogador.stamina >= 35) { jogador.isHeavyAttacking = true; jogador.isAttacking = false; jogador.attackCooldown = 45; jogador.stamina -= 35; if (distX < 150 && distY < 150) danoAoChefe(30); setTimeout(() => jogador.isHeavyAttacking = false, 500); }
+
+            // Animação Samurai
+            let novoEstadoSamurai = "idle"; let novosMaxFramesSamurai = 6;
+            if (jogador.isHealing) { novoEstadoSamurai = "heal"; novosMaxFramesSamurai = 2; } else if (jogador.isHeavyAttacking) { novoEstadoSamurai = "attackForte"; novosMaxFramesSamurai = 4; } else if (jogador.isAttacking) { novoEstadoSamurai = "attack1"; novosMaxFramesSamurai = 6; } else if (jogador.isDashing) { novoEstadoSamurai = "dash"; novosMaxFramesSamurai = 8; } else if (isMoving) { novoEstadoSamurai = "walk"; novosMaxFramesSamurai = 8; }
+            if (jogador.estadoAtual !== novoEstadoSamurai) { jogador.estadoAtual = novoEstadoSamurai; jogador.imgAtual = animacoes[novoEstadoSamurai]; jogador.maxFrames = novosMaxFramesSamurai; jogador.frameX = 0; }
+            jogador.animTimer++; if (jogador.animTimer >= 5) { jogador.frameX++; if (jogador.frameX >= jogador.maxFrames) { jogador.frameX = 0; } jogador.animTimer = 0; }
+
+            // Lógica de Fase 2 Boss
+            if (chefe.fase === 1 && chefe.hp <= chefe.maxHp / 2) { chefe.fase = 2; chefe.transicaoFase = 60; chefe.speed = 2.5; chefe.nome = "LORDE DAS CINZAS - FASE 2"; }
+            if (chefe.transicaoFase > 0) { chefe.transicaoFase--; if (jogador.hp > 10) jogador.hp -= 0.1; return; }
+
+            let distXChefe = jogador.x - chefe.x; let distYChefe = jogador.y - chefe.y;
+            let distancia = Math.sqrt(distXChefe*distXChefe + distYChefe*distYChefe); if (distancia === 0) distancia = 0.1;
+
+            // MÁQUINA DE ESTADOS DO BOSS
+            if (chefe.estado === "perseguir") {
+                mudarEstadoChefe("idle", animacoesChefe.idle, 4);
+                chefe.x += (distXChefe / distancia) * chefe.speed; chefe.y += (distYChefe / distancia) * chefe.speed;
+                chefe.espelhar = (distXChefe < 0); 
+
+                if (distancia < 150 && Math.random() < 0.02) {
+                    chefe.tipoAtaque = Math.random() > 0.5 ? "dash" : "area";
+                    mudarEstadoChefe("idle2", animacoesChefe.idle2, 4, chefe.fase === 2 ? 25 : 40);
+                    chefe.estado = "preparar"; 
+                    if (chefe.tipoAtaque === "dash") { chefe.direcaoAtaqueX = distXChefe / distancia; chefe.direcaoAtaqueY = distYChefe / distancia; } 
+                    else chefe.areaRaio = 0;
+                }
+            } else if (chefe.estado === "preparar") {
+                chefe.timerEstado--; if (chefe.tipoAtaque === "area") chefe.areaRaio += chefe.fase === 2 ? 3 : 1.5;
+                if (chefe.timerEstado <= 0) { 
+                    chefe.estado = "atacar"; 
+                    mudarEstadoChefe("attacking", animacoesChefe.attacking, 8, chefe.tipoAtaque === "dash" ? 15 : 20);
+                }
+            } else if (chefe.estado === "atacar") {
+                mudarEstadoChefe("attacking", animacoesChefe.attacking, 8);
+                if (chefe.tipoAtaque === "dash") { chefe.x += chefe.direcaoAtaqueX * (chefe.speed * 6); chefe.y += chefe.direcaoAtaqueY * (chefe.speed * 6); } 
+                else if (chefe.tipoAtaque === "area") { chefe.areaRaio = 140; if (distancia < 140 && !jogador.isDashing) jogador.hp -= 1.5; }
+                chefe.timerEstado--; if (chefe.timerEstado <= 0) { chefe.estado = "perseguir"; chefe.areaRaio = 0; }
+            }
+
+            // Avança os frames do Boss
+            chefe.animTimer++;
+            if (chefe.animTimer >= 6) { 
+                chefe.frameX++;
+                if (chefe.frameX >= chefe.maxFrames) { chefe.frameX = 0; }
+                chefe.animTimer = 0;
+            }
+
+            const colisaoX = Math.abs((jogador.x + jogador.width/2) - (chefe.x + chefe.width/2));
+            const colisaoY = Math.abs((jogador.y + jogador.height/2) - (chefe.y + chefe.height/2));
+            if (colisaoX < 50 && colisaoY < 50 && !jogador.isDashing) jogador.hp -= 1.5;
+            chefe.x = Math.max(0, Math.min(canvas.width - chefe.width, chefe.x)); chefe.y = Math.max(0, Math.min(canvas.height - chefe.height, chefe.y));
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (imgCenario.complete && imgCenario.naturalWidth > 0) ctx.drawImage(imgCenario, 0, 0, canvas.width, canvas.height);
+
+            // Desenha efeitos Samurai
+            if (jogador.isHealing) { ctx.beginPath(); ctx.arc(jogador.x + jogador.width/2, jogador.y + jogador.height/2, 60, 0, Math.PI * 2); ctx.fillStyle = "rgba(46, 213, 115, 0.4)"; ctx.fill(); ctx.strokeStyle = "#2ed573"; ctx.lineWidth = 4; ctx.stroke(); }
+            
+            // Desenha Samurai (Sprite)
+            if (jogador.imgAtual.complete && jogador.imgAtual.naturalWidth > 0) { 
+                ctx.save(); let drawX = jogador.x; let drawY = jogador.y; let spriteLarguraVisual = 120; let spriteAlturaVisual = 120; let offset = 30; 
+                if (jogador.espelhar) { ctx.scale(-1, 1); drawX = -jogador.x - jogador.width; } 
+                ctx.drawImage(jogador.imgAtual, jogador.frameX * jogador.spriteWidth, 0, jogador.spriteWidth, jogador.spriteHeight, drawX - offset, drawY - offset, spriteLarguraVisual, spriteAlturaVisual ); 
+                ctx.restore(); 
+            } else { ctx.fillStyle = "#1e90ff"; ctx.fillRect(jogador.x, jogador.y, jogador.width, jogador.height); }
+            
+            // Ataques Samurai
+            if (jogador.isAttacking) { ctx.beginPath(); ctx.arc(jogador.x + jogador.width/2, jogador.y + jogador.height/2, 85, 0, Math.PI * 2); ctx.strokeStyle = "rgba(255, 255, 255, 0.9)"; ctx.lineWidth = 4; ctx.stroke(); }
+            if (jogador.isHeavyAttacking) { ctx.beginPath(); ctx.arc(jogador.x + jogador.width/2, jogador.y + jogador.height/2, 125, 0, Math.PI * 2); ctx.fillStyle = "rgba(255, 165, 0, 0.5)"; ctx.fill(); ctx.strokeStyle = "red"; ctx.lineWidth = 6; ctx.stroke(); }
+
+            // Desenha efeitos Boss
+            if (chefe.transicaoFase > 0) { ctx.beginPath(); ctx.arc(chefe.x + chefe.width/2, chefe.y + chefe.height/2, 150 - chefe.transicaoFase, 0, Math.PI * 2); ctx.fillStyle = "rgba(255, 0, 0, 0.6)"; ctx.fill(); }
+            if (chefe.estado === "preparar" && chefe.tipoAtaque === "dash") { ctx.shadowBlur = 30; ctx.shadowColor = "yellow"; } else if (chefe.fase === 2) { ctx.shadowBlur = 20; ctx.shadowColor = "red"; } else ctx.shadowBlur = 0; 
+            
+            // Desenha Boss (Sprite)
+            if (chefe.imgAtual.complete && chefe.imgAtual.naturalWidth > 0) {
+                ctx.save(); let drawX = chefe.x; let drawY = chefe.y; let spriteLarguraVisual = 150; let spriteAlturaVisual = 150; let offset = 25;
+                if (chefe.espelhar) { ctx.scale(-1, 1); drawX = -chefe.x - chefe.width; }
+                ctx.drawImage(chefe.imgAtual, chefe.frameX * chefe.spriteWidth, 0, chefe.spriteWidth, chefe.spriteHeight, drawX - offset, drawY - offset, spriteLarguraVisual, spriteAlturaVisual);
+                ctx.restore(); 
+                if (chefe.isTakingDamage) { ctx.fillStyle = "rgba(255, 255, 255, 0.6)"; ctx.fillRect(chefe.x, chefe.y, chefe.width, chefe.height); } 
+                else if (chefe.fase === 2) { ctx.fillStyle = "rgba(255, 0, 0, 0.3)"; ctx.fillRect(chefe.x, chefe.y, chefe.width, chefe.height); }
+            } else { ctx.fillStyle = "#ff4757"; ctx.fillRect(chefe.x, chefe.y, chefe.width, chefe.height); }
+            ctx.shadowBlur = 0;
+            
+            if ((chefe.estado === "preparar" || chefe.estado === "atacar") && chefe.tipoAtaque === "area") { ctx.beginPath(); ctx.arc(chefe.x + chefe.width/2, chefe.y + chefe.height/2, chefe.areaRaio, 0, Math.PI * 2); ctx.fillStyle = chefe.estado === "preparar" ? "rgba(155, 89, 182, 0.4)" : "rgba(142, 68, 173, 0.7)"; ctx.fill(); }
+            
+            // HUD
+            const larguraBarraChefe = canvas.width - 60; ctx.fillStyle = "#111"; ctx.fillRect(30, 20, larguraBarraChefe, 20); ctx.fillStyle = "#ff4757"; ctx.fillRect(30, 20, (Math.max(0, chefe.hp) / chefe.maxHp) * larguraBarraChefe, 20); ctx.strokeStyle = "white"; ctx.strokeRect(30, 20, larguraBarraChefe, 20); ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.fillText(chefe.nome, canvas.width/2 - 70, 35); 
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)"; ctx.fillRect(10, 50, 210, 85); ctx.strokeStyle = "rgba(255, 255, 255, 0.3)"; ctx.strokeRect(10, 50, 210, 85); ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.fillText("HP", 20, 72); ctx.fillStyle = "#111"; ctx.fillRect(50, 60, 150, 14); ctx.fillStyle = "#2ed573"; ctx.fillRect(50, 60, (Math.max(0, jogador.hp) / jogador.maxHp) * 150, 14); ctx.fillStyle = "white"; ctx.fillText("ST", 20, 92); ctx.fillStyle = "#111"; ctx.fillRect(50, 80, 150, 14); ctx.fillStyle = "#eccc68"; ctx.fillRect(50, 80, (jogador.stamina / jogador.maxStamina) * 150, 14); ctx.fillStyle = "white"; ctx.font = "14px Arial"; ctx.fillText("Poções: 🧪 x " + jogador.curas, 20, 120);
+        }
+
+        function gameLoop() { 
+            try { update(); draw(); } catch (erro) { ctx.fillStyle = "white"; ctx.font = "20px Arial"; ctx.fillText("ERRO NO JOGO: " + erro.message, 20, canvas.height / 2); console.error(erro); return; } 
+            requestAnimationFrame(gameLoop); 
+        }
+        
+        gameLoop();
+    </script>
+</body>
+
+</html>
