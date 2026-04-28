@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Desafio Épico e Surpresa</title>
+    <title>Desafio Épico de Aniversário</title>
     <style>
         body { 
             margin: 0; padding: 0; background-color: #000; color: white; display: flex; justify-content: center; align-items: center; 
@@ -13,28 +13,35 @@
         }
         #gameCanvas { background-color: #111; transition: opacity 2s; }
         
-        /* UI de Controles (Corrigido para não dar Zoom no iPhone) */
+        /* UI de Controles */
         #controles { 
             position: absolute; bottom: 5%; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; 
             padding: 0 5%; box-sizing: border-box; z-index: 100; user-select: none; -webkit-user-select: none; pointer-events: none;
         }
 
-        .dpad { 
+        /* Formato de Cruz (Grid) para Andar E para Ações */
+        .dpad, .acoes { 
             pointer-events: auto; display: grid; grid-template-columns: repeat(3, min(13vw, 55px)); gap: min(2vw, 8px); 
         }
+        
+        /* Posições na Grelha */
+        .up, .act-up { grid-column: 2; grid-row: 1; } 
+        .left, .act-left { grid-column: 1; grid-row: 2; } 
+        .right, .act-right { grid-column: 3; grid-row: 2; } 
+        .down, .act-down { grid-column: 2; grid-row: 3; }
+
         .btn { 
             background: rgba(0, 0, 0, 0.6); border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 10px; 
             display: flex; justify-content: center; align-items: center; color: white; cursor: pointer; 
             font-size: min(5vw, 22px); width: 100%; height: min(13vw, 55px); box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .btn:active { background: rgba(255, 255, 255, 0.4); transform: scale(0.95); }
-        .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; } .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
         
-        .acoes { pointer-events: auto; display: flex; gap: min(3vw, 10px); align-items: flex-end; }
-        .btn-cura { width: min(12vw, 55px); height: min(12vw, 55px); border-radius: 50%; background: rgba(46, 213, 115, 0.4); border-color: #2ed573; font-size: min(5vw, 22px);}
-        .btn-dash { width: min(14vw, 65px); height: min(14vw, 65px); border-radius: 50%; background: rgba(30, 144, 255, 0.4); border-color: #1e90ff; font-size: min(6vw, 26px);}
-        .btn-atk { width: min(16vw, 75px); height: min(16vw, 75px); border-radius: 50%; background: rgba(255, 71, 87, 0.4); border-color: #ff4757; font-size: min(7vw, 30px);}
-        .btn-atk-forte { width: min(16vw, 75px); height: min(16vw, 75px); border-radius: 50%; background: rgba(255, 165, 0, 0.4); border-color: orange; font-size: min(7vw, 30px);}
+        /* Botões de Ação Específicos (Cores e Formato Redondo) */
+        .btn-cura { border-radius: 50%; background: rgba(46, 213, 115, 0.4); border-color: #2ed573; font-size: min(5vw, 22px);}
+        .btn-dash { border-radius: 50%; background: rgba(30, 144, 255, 0.4); border-color: #1e90ff; font-size: min(6vw, 26px);}
+        .btn-atk { border-radius: 50%; background: rgba(255, 71, 87, 0.4); border-color: #ff4757; font-size: min(7vw, 30px);}
+        .btn-atk-forte { border-radius: 50%; background: rgba(255, 165, 0, 0.4); border-color: orange; font-size: min(7vw, 30px);}
 
         /* TELAS */
         #telaMorte, #mensagemSurpresa { display: none; position: absolute; text-align: center; z-index: 200; }
@@ -68,11 +75,12 @@
             <div class="btn right" id="btnD">➡️</div>
             <div class="btn down" id="btnS">⬇️</div>
         </div>
+        
         <div class="acoes">
-            <div class="btn btn-cura" id="btnE">🧪</div>
-            <div class="btn btn-dash" id="btnShift">💨</div>
-            <div class="btn btn-atk" id="btnSpace">⚔️</div>
-            <div class="btn btn-atk-forte" id="btnR">💥</div>
+            <div class="btn btn-cura act-up" id="btnE">🧪</div>
+            <div class="btn btn-dash act-left" id="btnShift">💨</div>
+            <div class="btn btn-atk-forte act-right" id="btnR">💥</div>
+            <div class="btn btn-atk act-down" id="btnSpace">⚔️</div>
         </div>
     </div>
 
@@ -96,7 +104,7 @@
         const imgCenario = new Image(); imgCenario.src = "cenario.jpg";
 
         // ==========================================
-        // IMAGENS DO SAMURAI (Pasta: imagens/)
+        // IMAGENS DO SAMURAI
         // ==========================================
         const animacoes = {
             idle: new Image(), walk: new Image(), dash: new Image(),
@@ -111,7 +119,7 @@
         animacoes.dead.src = "imagens/Dead.png";
 
         // ==========================================
-        // IMAGENS DO BOSS (Pasta: boss/)
+        // IMAGENS DO BOSS
         // ==========================================
         const animacoesChefe = {
             idle: new Image(), idle2: new Image(), attacking: new Image(), death: new Image(),
@@ -127,7 +135,7 @@
         let jogoAtivo = true;
 
         const jogador = {
-            x: canvas.width / 2, y: canvas.height - 150, width: 60, height: 60,
+            x: canvas.width / 2 - 100, y: canvas.height - 150, width: 60, height: 60,
             speed: 3, hp: 100, maxHp: 100, stamina: 100, maxStamina: 100,
             curas: 3, isHealing: false, healCooldown: 0,
             isAttacking: false, isHeavyAttacking: false, attackCooldown: 0,
@@ -138,12 +146,12 @@
         };
 
         const chefe = {
-            x: canvas.width / 2 - 50, y: 80, width: 100, height: 100,
+            x: canvas.width / 2 + 50, y: 80, width: 100, height: 100,
             speed: 1.5, hp: 200, maxHp: 200, nome: "LORDE DAS CINZAS", fase: 1, transicaoFase: 0,
             estado: "perseguir", timerEstado: 0, direcaoAtaqueX: 0, direcaoAtaqueY: 0, tipoAtaque: "dash", areaRaio: 0, isTakingDamage: false,
             
             imgAtual: animacoesChefe.idle, estadoSprite: "idle", 
-            spriteWidth: 100, spriteHeight: 100, frameX: 0, maxFrames: 4, animTimer: 0, espelhar: false    
+            spriteWidth: 100, spriteHeight: 100, frameX: 0, maxFrames: 4, animTimer: 0, espelhar: true    
         };
 
         const keys = { w: false, a: false, s: false, d: false, space: false, r: false, shift: false, e: false };
@@ -186,8 +194,8 @@
             telaMorte.style.display = "none";
             jogador.hp = jogador.maxHp; jogador.stamina = jogador.maxStamina; jogador.curas = 3; jogador.estadoAtual = "idle";
             jogador.imgAtual = animacoes.idle; jogador.frameX = 0; 
-            jogador.x = canvas.width / 2; jogador.y = canvas.height - 150;
-            chefe.hp = chefe.maxHp; chefe.x = canvas.width / 2 - 50; chefe.y = 80;
+            jogador.x = canvas.width / 2 - 100; jogador.y = canvas.height - 150;
+            chefe.hp = chefe.maxHp; chefe.x = canvas.width / 2 + 50; chefe.y = 80;
             chefe.estado = "perseguir"; mudarEstadoChefe("idle", animacoesChefe.idle, 4); chefe.fase = 1; chefe.speed = 1.5; chefe.nome = "LORDE DAS CINZAS";
             jogoAtivo = true; 
         }
