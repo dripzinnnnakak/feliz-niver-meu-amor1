@@ -2,24 +2,41 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Desafio Épico e Surpresa</title>
     <style>
-        body { margin: 0; padding: 0; background-color: #000; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; touch-action: none; }
+        body { 
+            margin: 0; padding: 0; background-color: #000; color: white; display: flex; justify-content: center; align-items: center; 
+            height: 100vh; width: 100vw; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; 
+            touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+        }
         #gameCanvas { background-color: #111; transition: opacity 2s; }
         
-        #controles { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: space-between; padding: 0 10px; box-sizing: border-box; z-index: 100; user-select: none; }
-        .dpad { display: grid; grid-template-columns: 45px 45px 45px; gap: 5px; }
-        .btn { background: rgba(0, 0, 0, 0.6); border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 20px; color: white; width: 45px; height: 45px; cursor: pointer; }
-        .btn:active { background: rgba(255, 255, 255, 0.6); }
+        /* UI de Controles (Corrigido para não dar Zoom no iPhone) */
+        #controles { 
+            position: absolute; bottom: 5%; width: 100%; display: flex; justify-content: space-between; align-items: flex-end; 
+            padding: 0 5%; box-sizing: border-box; z-index: 100; user-select: none; -webkit-user-select: none; pointer-events: none;
+        }
+
+        .dpad { 
+            pointer-events: auto; display: grid; grid-template-columns: repeat(3, min(13vw, 55px)); gap: min(2vw, 8px); 
+        }
+        .btn { 
+            background: rgba(0, 0, 0, 0.6); border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 10px; 
+            display: flex; justify-content: center; align-items: center; color: white; cursor: pointer; 
+            font-size: min(5vw, 22px); width: 100%; height: min(13vw, 55px); box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .btn:active { background: rgba(255, 255, 255, 0.4); transform: scale(0.95); }
         .up { grid-column: 2; grid-row: 1; } .left { grid-column: 1; grid-row: 2; } .right { grid-column: 3; grid-row: 2; } .down { grid-column: 2; grid-row: 3; }
         
-        .acoes { display: flex; gap: 8px; align-items: flex-end; padding-bottom: 10px; }
-        .btn-cura { width: 50px; height: 50px; border-radius: 50%; background: rgba(46, 213, 115, 0.4); border-color: #2ed573; font-size: 22px;}
-        .btn-dash { width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 144, 255, 0.4); border-color: #1e90ff; font-size: 24px;}
-        .btn-atk { width: 65px; height: 65px; border-radius: 50%; background: rgba(255, 71, 87, 0.4); border-color: #ff4757; font-size: 28px;}
-        .btn-atk-forte { width: 65px; height: 65px; border-radius: 50%; background: rgba(255, 165, 0, 0.4); border-color: orange; font-size: 28px;}
+        .acoes { pointer-events: auto; display: flex; gap: min(3vw, 10px); align-items: flex-end; }
+        .btn-cura { width: min(12vw, 55px); height: min(12vw, 55px); border-radius: 50%; background: rgba(46, 213, 115, 0.4); border-color: #2ed573; font-size: min(5vw, 22px);}
+        .btn-dash { width: min(14vw, 65px); height: min(14vw, 65px); border-radius: 50%; background: rgba(30, 144, 255, 0.4); border-color: #1e90ff; font-size: min(6vw, 26px);}
+        .btn-atk { width: min(16vw, 75px); height: min(16vw, 75px); border-radius: 50%; background: rgba(255, 71, 87, 0.4); border-color: #ff4757; font-size: min(7vw, 30px);}
+        .btn-atk-forte { width: min(16vw, 75px); height: min(16vw, 75px); border-radius: 50%; background: rgba(255, 165, 0, 0.4); border-color: orange; font-size: min(7vw, 30px);}
 
+        /* TELAS */
         #telaMorte, #mensagemSurpresa { display: none; position: absolute; text-align: center; z-index: 200; }
         #telaMorte { width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); flex-direction: column; justify-content: center; align-items: center; animation: fadeInMorte 2s ease-in; }
         #telaMorte h1 { color: #8b0000; font-family: 'Times New Roman', Times, serif; font-size: 12vw; letter-spacing: 5px; text-shadow: 0 0 20px red; margin: 0; }
@@ -172,7 +189,7 @@
             jogador.x = canvas.width / 2; jogador.y = canvas.height - 150;
             chefe.hp = chefe.maxHp; chefe.x = canvas.width / 2 - 50; chefe.y = 80;
             chefe.estado = "perseguir"; mudarEstadoChefe("idle", animacoesChefe.idle, 4); chefe.fase = 1; chefe.speed = 1.5; chefe.nome = "LORDE DAS CINZAS";
-            jogoAtivo = true; // Só precisamos disto, o loop já está a correr!
+            jogoAtivo = true; 
         }
 
         function criarCoracoes() {
@@ -197,7 +214,6 @@
         }
 
         function update() {
-            // Se morreu, apenas anima o boneco a cair e pára o resto
             if (jogador.hp <= 0) { 
                 if (jogoAtivo) {
                     jogoAtivo = false; jogador.estadoAtual = "dead"; jogador.imgAtual = animacoes.dead; jogador.maxFrames = 4; jogador.frameX = 0; jogador.animTimer = 0;
@@ -208,7 +224,6 @@
                 return; 
             }
 
-            // Se o Boss morreu, apenas anima a morte do Boss
             if (chefe.hp <= 0) { 
                 if (jogoAtivo) {
                     jogoAtivo = false; chefe.estado = "dead"; mudarEstadoChefe("death", animacoesChefe.death, 6); 
@@ -351,5 +366,4 @@
         gameLoop();
     </script>
 </body>
-
 </html>
